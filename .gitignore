@@ -1,0 +1,24 @@
+# Build folders
+/build/
+/bin/
+/lib/
+
+# CMake files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# Editor/IDE
+*.sln
+*.vcxproj*
+*.user
+*.idea/
+.vscode/
+.vs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+x64
