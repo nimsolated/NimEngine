@@ -4,6 +4,7 @@
 #include "../include/Input.h"
 #include "../include/Camera.h"
 #include "../include/Shader.h"
+#include "../include/Texture.h"
 #include <glm/glm.hpp>
 
 class Scene {
@@ -22,37 +23,53 @@ public:
         lastY = Input::getMouseY();
         camera.setPerspective(45.0f, 800.0f / 600.0f, 0.1f, 100.0f);
 
-        // Load shader
+        // Load shader and texture
         shader = std::make_unique<Shader>(
-            "assets/shaders/simple.vert",
-            "assets/shaders/simple.frag"
+            "assets/shaders/textured.vert",
+            "assets/shaders/textured.frag"
         );
+        texture = std::make_unique<Texture>("assets/textures/nimblep.png");
 
-        // Make a triangle with these vertices
+        // Make a quad with these vertices and indices
         float verts[] = {
-            0.0f, 0.5f, 0.0f,
-            -0.5f, -0.5f, 0.0f,
-            0.5f, -0.5f, 0.0f
+            // positions            // tex coords
+            -0.5f, 0.5f, 0.0f,      0.0f, 1.0f,
+            -0.5f, -0.5f, 0.0f,     0.0f, 0.0f,
+            0.5f, -0.5f, 0.0f,      1.0f, 0.0f,
+            0.5f, 0.5f, 0.0f,       1.0f, 1.0f
+        };
+        unsigned int idx[] = {
+            0, 1, 2,
+            0, 2, 3
         };
 
-        // Setup VAO/VBO
+        // Setup VAO/VBO/EBO
         glGenVertexArrays(1, &VAO);
-        glGenBuffers(1, &VBO);
         glBindVertexArray(VAO);
 
+        glGenBuffers(1, &VBO);
         glBindBuffer(GL_ARRAY_BUFFER, VBO);
         glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
 
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
-        glEnableVertexAttribArray(0);
+        glGenBuffers(1, &EBO);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(idx), idx, GL_STATIC_DRAW);
 
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        // pos attribute
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+        
+        // uv attribute
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+
         glBindVertexArray(0);
     }
     
     ~BasicScene() {
         glDeleteVertexArrays(1, &VAO);
         glDeleteBuffers(1, &VBO);
+        glDeleteBuffers(1, &EBO);
     }
 
     void update(float dt) override {
@@ -85,15 +102,26 @@ public:
 
     void render() override {
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         shader->use();
-        // Fetch the latest from camera
+        // set matrices
         glm::mat4 view = camera.getViewMatrix();
         glm::mat4 projection = camera.getProjectionMatrix();
+        glUniformMatrix4fv(glGetUniformLocation(shader->getID(), "uView"), 1, GL_FALSE, &view[0][0]);
+        glUniformMatrix4fv(glGetUniformLocation(shader->getID(), "uProjection"), 1, GL_FALSE, &projection[0][0]);
+        // model = identity (translate/rotate/scale here)
+        glm::mat4 model = glm::mat4(1.0f);
+        glUniformMatrix4fv(
+            glGetUniformLocation(shader->getID(), "uModel"), 1, GL_FALSE, &model[0][0]
+        );
+        // bind texture unit 0
+        texture->bind(0);
+        glUniform1i(glGetUniformLocation(shader->getID(), "uTexture"), 0);
 
+        // draw quad
         glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
         glBindVertexArray(0);
     }
 private:
@@ -103,8 +131,10 @@ private:
     float lastY;
     // for shaders
     std::unique_ptr<Shader> shader;
+    std::unique_ptr<Texture> texture;
     GLuint VAO = 0;
     GLuint VBO = 0;
+    GLuint EBO = 0;
 };
 
 int main() {
@@ -125,10 +155,20 @@ int main() {
         return -1;
     }
     glfwMakeContextCurrent(window);
+
+    glfwSetFramebufferSizeCallback(window, [](GLFWwindow* w, int newW, int newH) {
+            glViewport(0, 0, newW, newH);
+        });
+
     gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
     // Initialize the input system
     Input::init(window);
+
+    int width;
+    int height;
+    glfwGetFramebufferSize(window, &width, &height);
+    glViewport(0, 0, width, height);
 
     // Timing
     float lastFrameTime = static_cast<float>(glfwGetTime());

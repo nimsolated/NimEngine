@@ -9,11 +9,13 @@ add_executable(NimEngine
     Input.cpp
     Camera.cpp
     Shader.cpp
+    Texture.cpp
 )
 
 # Include our public headers
 target_include_directories(NimEngine PRIVATE
     ${PROJECT_SOURCE_DIR}/include
+    ${PROJECT_SOURCE_DIR}/external/stb
 )
 
 # Link in GLFW, GLAD, and OpenGL
