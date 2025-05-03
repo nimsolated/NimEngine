@@ -8,6 +8,7 @@ add_executable(NimEngine
     main.cpp
     Input.cpp
     Camera.cpp
+    Shader.cpp
 )
 
 # Include our public headers
@@ -21,4 +22,11 @@ target_link_libraries(NimEngine PRIVATE
     glad
     ${OPENGL_gl_LIBRARY}
     glm
+)
+
+# Copy entire assets/ into output directory
+add_custom_command(TARGET NimEngine POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/assets
+        $<TARGET_FILE_DIR:NimEngine>/assets
 )
