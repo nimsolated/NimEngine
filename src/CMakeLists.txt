@@ -6,6 +6,7 @@ find_package(OpenGL REQUIRED)
 # Engine executable
 add_executable(NimEngine
     main.cpp
+    Input.cpp
 )
 
 # Include our public headers
@@ -18,4 +19,5 @@ target_link_libraries(NimEngine PRIVATE
     glfw
     glad
     ${OPENGL_gl_LIBRARY}
+    glm
 )
