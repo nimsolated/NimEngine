@@ -113,7 +113,6 @@ int main() {
         */
         glfwSwapBuffers(window);
         glfwPollEvents();
-        std::cout << Input::getMouseX() << ", " << Input::getMouseY() << std::endl;
     }
 
     glfwDestroyWindow(window);

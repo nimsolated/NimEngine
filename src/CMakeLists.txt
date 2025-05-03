@@ -7,6 +7,7 @@ find_package(OpenGL REQUIRED)
 add_executable(NimEngine
     main.cpp
     Input.cpp
+    Camera.cpp
 )
 
 # Include our public headers
